@@ -32,8 +32,18 @@ def enum_contents(directory='contents'):
     contents = [(content, get_title(content, directory)) for content in tmp]
     return contents
 
-# コンテンツ一覧を取得
-contents = enum_contents()
+# URLパラメータを更新
+def update_params(content_name):
+    st.experimental_set_query_params(page=content_name)
+    st.session_state['content_name'] = content_name
+
+# セレクトボックスのイベントハンドラ
+def selectbox_changed():
+    # セレクトボックスで選ばれた値がst.session_state.titleにセットされる
+    # titleからcontent_nameを取得
+    content_name = [content[0] for content in contents if content[1] == st.session_state.title][0]
+    # URLパラメータを更新
+    update_params(content_name)
 
 # コンテンツを表示する関数
 def show_content(content_name):
@@ -61,20 +71,27 @@ def show_content(content_name):
                 st.image(f"images/{image}")
                 image_count += 1
 
-# コンテンツ一覧を表示
-is_initial = True
+# コンテンツ一覧を取得
+contents = enum_contents()
+
+# コンテンツ一覧をサイドバーに表示
 st.sidebar.title('Contents')
 for content_name, title in contents:
     if st.sidebar.button(title):
-        # コンテンツを表示
-        show_content(content_name)
-        is_initial = False
+        # URLパラメータを更新
+        update_params(content_name)
 
 # URLパラメータを取得
 params = st.experimental_get_query_params()
-# URLパラメータからpageの値を取得
-page = params['page'][0] if 'page' in params else DEFAULT_CONTENT_NAME
+page = st.session_state['content_name'] if 'content_name' in st.session_state else DEFAULT_CONTENT_NAME
+
+# セレクトボックスの初期値(index)を取得
+index = [content[0] for content in contents].index(page)
+# コンテンツ一覧をセレクトボックスで表示
+title_list = [content[1] for content in contents]
+selected_content = st.selectbox(
+    "コンテンツ一覧", title_list, index=index, key='title', on_change=selectbox_changed
+)
 
 # コンテンツを表示
-if is_initial:
-    show_content(page)
+show_content(page)
